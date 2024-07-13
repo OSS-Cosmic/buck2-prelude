@@ -41,7 +41,7 @@ def gen(args):
                     arguments.append(" ".join(shlex.split(line)))
         else:
             arguments.append(arg)
-    entry["arguments"] = arguments
+    entry["command"] = " ".join(arguments)
 
     json.dump(entry, args.output, indent=2)
     args.output.close()
