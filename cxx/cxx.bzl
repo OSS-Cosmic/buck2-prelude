@@ -63,6 +63,7 @@ load(
     "extract_soname_from_shlib",
     "merge_shared_libraries",
     "to_soname",
+    "traverse_shared_library_info"
 )
 load("@prelude//linking:strip.bzl", "strip_debug_info")
 load("@prelude//linking:types.bzl", "Linkage")
@@ -718,6 +719,12 @@ def cxx_test_impl(ctx: AnalysisContext) -> list[Provider]:
     params = CxxRuleConstructorParams(
         rule_type = "cxx_test",
         headers_layout = cxx_get_regular_cxx_headers_layout(ctx),
+        extra_shared_libs = traverse_shared_library_info(
+            merge_shared_libraries(
+                actions = ctx.actions,
+                deps = [dep.get(SharedLibraryInfo) for dep in ctx.attrs.extra_shared_deps],
+            ),
+        ),
         srcs = get_srcs_with_flags(ctx),
         link_group_info = link_group_info,
         auto_link_group_specs = get_auto_link_group_specs(ctx, link_group_info),
