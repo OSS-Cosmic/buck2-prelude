@@ -855,6 +855,7 @@ cxx_test = prelude_rule(
         native_common.link_group_deps() |
         native_common.link_group_public_deps_label() |
         {
+            "extra_shared_deps": attrs.list(attrs.dep(), default = []),
             "additional_coverage_targets": attrs.list(attrs.source(), default = []),
             "contacts": attrs.list(attrs.string(), default = []),
             "cxx_runtime_type": attrs.option(attrs.enum(CxxRuntimeType), default = None),
