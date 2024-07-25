@@ -134,6 +134,7 @@ def rust_library_impl(ctx: AnalysisContext) -> list[Provider]:
         emit = Emit("metadata-fast"),
         params = meta_params,
         default_roots = ["lib.rs"],
+        incremental_enabled = ctx.attrs.incremental_enabled,
     )
 
     # Generate the actions to build various output artifacts. Given the set of
@@ -148,6 +149,7 @@ def rust_library_impl(ctx: AnalysisContext) -> list[Provider]:
             emit = Emit("link"),
             params = params,
             default_roots = ["lib.rs"],
+            incremental_enabled = ctx.attrs.incremental_enabled,
         )
 
         if LinkageLang("rust") in langs:
@@ -159,6 +161,7 @@ def rust_library_impl(ctx: AnalysisContext) -> list[Provider]:
                     emit = Emit("metadata-full"),
                     params = params,
                     default_roots = ["lib.rs"],
+                    incremental_enabled = ctx.attrs.incremental_enabled,
                 ),
                 MetadataKind("fast"): meta_fast,
             }
@@ -232,7 +235,8 @@ def rust_library_impl(ctx: AnalysisContext) -> list[Provider]:
         # fully compile, but will report an error even if it succeeds.
         # TODO(pickett): Handle this at the rustc action level, we shouldn't
         # need to pass a special arg here, expand should just work.
-        diagnostics_only = True,
+        infallible_diagnostics = True,
+        incremental_enabled = ctx.attrs.incremental_enabled,
     )
 
     # If doctests=True or False is set on the individual target, respect that.
@@ -259,20 +263,33 @@ def rust_library_impl(ctx: AnalysisContext) -> list[Provider]:
         default_roots = default_roots,
     )
 
-    # diagnostics_only allows us to circumvent compilation failures and
+    # infallible_diagnostics allows us to circumvent compilation failures and
     # treat the resulting rustc action as a success, even if a metadata
     # artifact was not generated. This allows us to generate diagnostics
     # even when the target has bugs.
-    diag_artifacts = rust_compile(
-        ctx = ctx,
-        compile_ctx = compile_ctx,
-        emit = Emit("metadata-fast"),
-        params = meta_params,
-        default_roots = ["lib.rs"],
-        designated_clippy = True,
-        diagnostics_only = True,
-    )
+    diag_artifacts = {}
+    clippy_artifacts = {}
+    for incr in (True, False):
+        diag_artifacts[incr] = rust_compile(
+            ctx = ctx,
+            compile_ctx = compile_ctx,
+            emit = Emit("metadata-fast"),
+            params = meta_params,
+            default_roots = ["lib.rs"],
+            infallible_diagnostics = True,
+            incremental_enabled = incr,
+        )
+        clippy_artifacts[incr] = rust_compile(
+            ctx = ctx,
+            compile_ctx = compile_ctx,
+            emit = Emit("clippy"),
+            params = meta_params,
+            default_roots = ["lib.rs"],
+            infallible_diagnostics = True,
+            incremental_enabled = incr,
+        )
 
+    incr_enabled = ctx.attrs.incremental_enabled
     providers = []
     providers += _default_providers(
         lang_style_param = lang_style_param,
@@ -281,14 +298,15 @@ def rust_library_impl(ctx: AnalysisContext) -> list[Provider]:
         rustdoc = rustdoc,
         rustdoc_test = rustdoc_test,
         doctests_enabled = doctests_enabled,
-        check_artifacts = output_as_diag_subtargets(diag_artifacts),
+        check_artifacts = output_as_diag_subtargets(diag_artifacts[incr_enabled], clippy_artifacts[incr_enabled]),
         expand = expand.output,
         sources = compile_ctx.symlinked_srcs,
         rustdoc_coverage = rustdoc_coverage,
         named_deps_names = write_named_deps_names(ctx, compile_ctx),
     )
     providers += _rust_metadata_providers(
-        check_artifacts = rust_param_artifact[meta_params],
+        diag_artifacts = diag_artifacts,
+        clippy_artifacts = clippy_artifacts,
     )
 
     if ctx.attrs.proc_macro:
@@ -564,11 +582,13 @@ def _default_providers(
 
     return providers
 
-def _rust_metadata_providers(check_artifacts: dict[MetadataKind, RustcOutput]) -> list[Provider]:
+def _rust_metadata_providers(diag_artifacts: dict[bool, RustcOutput], clippy_artifacts: dict[bool, RustcOutput]) -> list[Provider]:
     return [
         RustcExtraOutputsInfo(
-            metadata_full = check_artifacts[MetadataKind("full")],
-            metadata_fast = check_artifacts[MetadataKind("fast")],
+            metadata = diag_artifacts[False],
+            metadata_incr = diag_artifacts[True],
+            clippy = clippy_artifacts[False],
+            clippy_incr = clippy_artifacts[True],
         ),
     ]
 

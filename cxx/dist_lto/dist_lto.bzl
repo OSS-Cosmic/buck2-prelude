@@ -288,8 +288,31 @@ def cxx_dist_link(
                 add_linkable(idx, linkable)
                 index_link_data.append(None)
 
-    index_argsfile_out = ctx.actions.declare_output(output.basename + ".thinlto.index.argsfile")
+    index_argsfile_out = ctx.actions.declare_output(output.basename + ".thinlto_index_argsfile")
     final_link_index = ctx.actions.declare_output(output.basename + ".final_link_index")
+
+    def prepare_index_flags_for_debugging() -> cmd_args:
+        result = cmd_args()
+        index_cmd_parts = cxx_link_cmd_parts(cxx_toolchain)
+        result.add(index_cmd_parts.linker_flags)
+        result.add(index_cmd_parts.post_linker_flags)
+
+        for idx in range(len(index_link_data)):
+            if idx in pre_post_flags:
+                for flag in pre_post_flags[idx]:
+                    result.add(flag.pre_flags)
+                    result.add(flag.post_flags)
+
+        return result
+
+    # The flags used for the thin-link action. Unlike index_args, this does not include input file, and
+    # is only used for debugging and testing, and can be determined without dynamic output.
+    index_flags_for_debugging = prepare_index_flags_for_debugging()
+    index_flags_for_debugging_argsfile, _ = ctx.actions.write(
+        output.basename + ".thinlto_index_common_argsfile",
+        index_flags_for_debugging,
+        allow_args = True,
+    )
 
     def dynamic_plan(link_plan: Artifact, index_argsfile_out: Artifact, final_link_index: Artifact):
         def plan(ctx: AnalysisContext, artifacts, outputs):
@@ -435,6 +458,12 @@ def cxx_dist_link(
 
     opt_common_flags = prepare_opt_flags(link_infos)
 
+    # Create an argsfile and dump all the flags to be processed later by lto_opt.
+    # These flags are common to all opt actions, we don't need an argfile for each action, one
+    # for the entire link unit will do.
+    opt_argsfile = ctx.actions.declare_output(output.basename + ".lto_opt_argsfile")
+    ctx.actions.write(opt_argsfile.as_output(), opt_common_flags, allow_args = True)
+
     # We declare a separate dynamic_output for every object file. It would
     # maybe be simpler to have a single dynamic_output that produced all the
     # opt actions, but an action needs to re-run whenever the analysis that
@@ -469,9 +498,6 @@ def cxx_dist_link(
             elif cxx_toolchain.split_debug_mode == SplitDebugMode("single"):
                 opt_cmd.add("--split-dwarf=single")
 
-            # Create an argsfile and dump all the flags to be processed later.
-            opt_argsfile = ctx.actions.declare_output(outputs[opt_object].basename + ".opt.argsfile")
-            ctx.actions.write(opt_argsfile.as_output(), opt_common_flags, allow_args = True)
             opt_cmd.add(cmd_args(hidden = opt_common_flags))
             opt_cmd.add("--args", opt_argsfile)
 
@@ -526,8 +552,6 @@ def cxx_dist_link(
                 elif cxx_toolchain.split_debug_mode == SplitDebugMode("single"):
                     opt_cmd.add("--split-dwarf=single")
 
-                opt_argsfile = ctx.actions.declare_output(opt_object.basename + ".opt.argsfile")
-                ctx.actions.write(opt_argsfile.as_output(), opt_common_flags, allow_args = True)
                 opt_cmd.add(cmd_args(hidden = opt_common_flags))
                 opt_cmd.add("--args", opt_argsfile)
 
@@ -563,7 +587,7 @@ def cxx_dist_link(
         elif artifact.data_type == _DataType("archive"):
             dynamic_optimize_archive(link_data)
 
-    linker_argsfile_out = ctx.actions.declare_output(output.basename + ".thinlto.link.argsfile")
+    linker_argsfile_out = ctx.actions.declare_output(output.basename + ".thinlto_link_argsfile")
 
     def thin_lto_final_link(ctx: AnalysisContext, artifacts, outputs):
         plan = artifacts[link_plan_out].read_json()
@@ -671,7 +695,9 @@ def cxx_dist_link(
         dwp = dwp_output,
         external_debug_info = external_debug_info,
         linker_argsfile = linker_argsfile_out,
-        linker_filelist = None,  # DistLTO unsupported for Darwin linkers
-        linker_command = None,  # DistLTO unsupported for debugging of command
+        linker_filelist = None,  # DistLTO doesn't use filelists
+        linker_command = None,  # There is no notion of a single linker command for DistLTO
         index_argsfile = index_argsfile_out,
+        dist_thin_lto_codegen_argsfile = opt_argsfile,
+        dist_thin_lto_index_argsfile = index_flags_for_debugging_argsfile,
     )

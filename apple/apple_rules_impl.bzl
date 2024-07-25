@@ -5,6 +5,7 @@
 # License, Version 2.0 found in the LICENSE-APACHE file in the root directory
 # of this source tree.
 
+load("@prelude//:attrs_validators.bzl", "ATTRS_VALIDATORS_NAME", "ATTRS_VALIDATORS_TYPE")
 load(
     "@prelude//:validation_deps.bzl",
     "VALIDATION_DEPS_ATTR_NAME",
@@ -100,6 +101,7 @@ def _apple_binary_extra_attrs():
         "_enable_library_evolution": get_enable_library_evolution(),
         "_stripped_default": attrs.bool(default = False),
         VALIDATION_DEPS_ATTR_NAME: VALIDATION_DEPS_ATTR_TYPE,
+        ATTRS_VALIDATORS_NAME: ATTRS_VALIDATORS_TYPE,
     }
     attribs.update(apple_dsymutil_attrs())
     return attribs
@@ -115,6 +117,7 @@ def _apple_library_extra_attrs():
         "link_ordering": attrs.option(attrs.enum(LinkOrdering.values()), default = None),
         "precompiled_header": attrs.option(attrs.dep(providers = [CPrecompiledHeaderInfo]), default = None),
         "preferred_linkage": attrs.enum(Linkage.values(), default = "any"),
+        "propagated_target_sdk_version": attrs.option(attrs.string(), default = None),
         "serialize_debugging_options": attrs.bool(default = True),
         # Mach-O file type for binary when the target is built as a shared library.
         "shared_library_macho_file_type": attrs.enum(AppleSharedLibraryMachOFileType.values(), default = "dylib"),
@@ -131,6 +134,7 @@ def _apple_library_extra_attrs():
         "_enable_library_evolution": get_enable_library_evolution(),
         "_stripped_default": attrs.bool(default = False),
         APPLE_ARCHIVE_OBJECTS_LOCALLY_OVERRIDE_ATTR_NAME: attrs.option(attrs.bool(), default = None),
+        ATTRS_VALIDATORS_NAME: ATTRS_VALIDATORS_TYPE,
         VALIDATION_DEPS_ATTR_NAME: VALIDATION_DEPS_ATTR_TYPE,
     }
     attribs.update(apple_dsymutil_attrs())
