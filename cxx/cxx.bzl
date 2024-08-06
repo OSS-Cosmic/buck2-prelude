@@ -250,6 +250,12 @@ def cxx_binary_impl(ctx: AnalysisContext) -> list[Provider]:
     params = CxxRuleConstructorParams(
         rule_type = "cxx_binary",
         executable_name = ctx.attrs.executable_name,
+        extra_shared_libs = traverse_shared_library_info(
+            merge_shared_libraries(
+                actions = ctx.actions,
+                deps = [dep.get(SharedLibraryInfo) for dep in ctx.attrs.extra_shared_deps],
+            ),
+        ),
         headers_layout = cxx_get_regular_cxx_headers_layout(ctx),
         srcs = get_srcs_with_flags(ctx),
         link_group_info = link_group_info,
