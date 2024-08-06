@@ -98,6 +98,7 @@ cxx_binary = prelude_rule(
         cxx_common.raw_headers_arg() |
         cxx_common.include_directories_arg() |
         {
+            "extra_shared_deps": attrs.list(attrs.dep(), default = []),
             "contacts": attrs.list(attrs.string(), default = []),
             "cxx_runtime_type": attrs.option(attrs.enum(CxxRuntimeType), default = None),
             "default_host_platform": attrs.option(attrs.configuration_label(), default = None),
