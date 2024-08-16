@@ -8,7 +8,7 @@
 load("@prelude//apple:apple_toolchain_types.bzl", "AppleToolchainInfo")
 load("@prelude//cxx:cxx_toolchain_types.bzl", "CxxPlatformInfo", "CxxToolchainInfo")
 
-# The functions below allow the Cxx rules to find toolchain providers
+# The functions below allow the apple rules to find toolchain providers
 # from different rule contexts. For example, the Cxx functions are
 # re-used by non-`cxx_` rules (e.g., the Apple rules) but the toolchain
 # setup on such rules might/would be different.
@@ -21,11 +21,6 @@ load("@prelude//cxx:cxx_toolchain_types.bzl", "CxxPlatformInfo", "CxxToolchainIn
 # the top level but as part of the transition to support
 # `apple_toolchain`, we want to make progress now.
 
-def get_cxx_platform_info(ctx: AnalysisContext) -> CxxPlatformInfo:
-    apple_toolchain = getattr(ctx.attrs, "_apple_toolchain", None)
-    if apple_toolchain:
-        return apple_toolchain[CxxPlatformInfo]
-    return ctx.attrs._cxx_toolchain[CxxPlatformInfo]
+def get_apple_toolchain_info(ctx: AnalysisContext) -> CxxToolchainInfo:
+    return ctx.attrs._apple_toolchain[AppleToolchainInfo]
 
-def get_cxx_toolchain_info(ctx: AnalysisContext) -> CxxToolchainInfo:
-    return ctx.attrs._cxx_toolchain[CxxToolchainInfo]

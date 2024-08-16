@@ -18,8 +18,6 @@ AppleToolchainInfo = provider(
         "codesign": provider_field(RunInfo),
         "compile_resources_locally": provider_field(bool),
         "copy_scene_kit_assets": provider_field(RunInfo),
-        "cxx_platform_info": provider_field(CxxPlatformInfo),
-        "cxx_toolchain_info": provider_field(CxxToolchainInfo),
         "dsymutil": provider_field(RunInfo),
         "dwarfdump": provider_field(RunInfo | None, default = None),
         "extra_linker_outputs": provider_field(list[str]),
@@ -37,7 +35,7 @@ AppleToolchainInfo = provider(
         "sdk_path": provider_field(str | Artifact),
         # TODO(T124581557) Make it non-optional once there is no "selected xcode" toolchain
         "sdk_version": provider_field(str | None, default = None),
-        "swift_toolchain_info": provider_field(SwiftToolchainInfo),
+        "swift_toolchain_info": provider_field(SwiftToolchainInfo | None, default = None),
         "xcode_build_version": provider_field(str | None, default = None),
         "xcode_version": provider_field(str | None, default = None),
         "xctest": provider_field(RunInfo),
@@ -49,8 +47,8 @@ AppleToolsInfo = provider(
     fields = {
         "assemble_bundle": provider_field(RunInfo),
         "split_arch_combine_dsym_bundles_tool": provider_field(RunInfo),
-        "dry_codesign_tool": provider_field(RunInfo),
-        "adhoc_codesign_tool": provider_field(RunInfo),
+        "dry_codesign_tool": provider_field(RunInfo ),
+        "adhoc_codesign_tool": provider_field(RunInfo | None),
         "selective_debugging_scrubber": provider_field(RunInfo),
         "info_plist_processor": provider_field(RunInfo),
         "ipa_package_maker": provider_field(RunInfo),

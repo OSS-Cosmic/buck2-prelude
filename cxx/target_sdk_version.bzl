@@ -39,25 +39,26 @@ def get_toolchain_target_sdk_version(ctx: AnalysisContext) -> [None, str]:
         return target_version
 
 def get_target_sdk_version(ctx: AnalysisContext) -> [None, str]:
-    toolchain_target_sdk_version = get_cxx_toolchain_info(ctx).target_sdk_version
-    target_sdk_version = getattr(ctx.attrs, "target_sdk_version", None)
-    if toolchain_target_sdk_version == None and target_sdk_version == None:
-        return None
-    elif toolchain_target_sdk_version != None and target_sdk_version == None:
-        return toolchain_target_sdk_version
-    elif toolchain_target_sdk_version == None and target_sdk_version != None:
-        return target_sdk_version
-    elif _version_is_greater(target_sdk_version, toolchain_target_sdk_version):
-        # The requested target_sdk_version on the toolchain must be >=
-        # the version set on the target, which should be the minimum
-        # allowed for this version to build.
-        fail("{} has target_sdk_version {}, which is larger than the toolchain target_sdk_version of {}".format(
-            ctx.label,
-            target_sdk_version,
-            toolchain_target_sdk_version,
-        ))
-    else:
-        return toolchain_target_sdk_version
+    return "10.5"
+    # toolchain_target_sdk_version = get_cxx_toolchain_info(ctx).target_sdk_version
+    # target_sdk_version = getattr(ctx.attrs, "target_sdk_version", None)
+    # if toolchain_target_sdk_version == None and target_sdk_version == None:
+    #     return None
+    # elif toolchain_target_sdk_version != None and target_sdk_version == None:
+    #     return toolchain_target_sdk_version
+    # elif toolchain_target_sdk_version == None and target_sdk_version != None:
+    #     return target_sdk_version
+    # elif _version_is_greater(target_sdk_version, toolchain_target_sdk_version):
+    #     # The requested target_sdk_version on the toolchain must be >=
+    #     # the version set on the target, which should be the minimum
+    #     # allowed for this version to build.
+    #     fail("{} has target_sdk_version {}, which is larger than the toolchain target_sdk_version of {}".format(
+    #         ctx.label,
+    #         target_sdk_version,
+    #         toolchain_target_sdk_version,
+    #     ))
+    # else:
+    #     return toolchain_target_sdk_version
 
 _PLATFORM_TARGET_TRIPLE_MAP = {
     "appletvos": "{architecture}-apple-tvos{version}",

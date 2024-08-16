@@ -130,6 +130,7 @@ cxx_binary = prelude_rule(
             "thin_lto": attrs.bool(default = False),
             "version_universe": attrs.option(attrs.string(), default = None),
             "weak_framework_names": attrs.list(attrs.string(), default = []),
+            "target_sdk_version": attrs.option(attrs.string(), default = None)
         } |
         buck.allow_cache_upload_arg()
     ),
